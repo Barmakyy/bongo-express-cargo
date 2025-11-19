@@ -23,6 +23,10 @@ import CustomerSettings from './pages/CustomerSettings.jsx';
 import CustomerPayments from './pages/CustomerPayments.jsx';
 import ShipmentTracker from './pages/ShipmentTracker.jsx';
 import CustomerShipments from './pages/CustomerShipments.jsx';
+import ForgotPassword from './pages/ForgotPassword.jsx';
+import ResetPassword from './pages/ResetPassword.jsx';
+import GuestBooking from './pages/GuestBooking.jsx';
+import TrackingPage from './pages/TrackingPage.jsx';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { NotificationProvider } from './context/NotificationContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
@@ -38,6 +42,11 @@ const router = createBrowserRouter([
       { path: 'contact', element: <Contact /> },
       { path: 'login', element: <Login /> },
       { path: 'register', element: <Register /> },
+      { path: 'forgot-password', element: <ForgotPassword /> },
+      { path: 'reset-password/:token', element: <ResetPassword /> },
+      { path: 'book-shipment', element: <GuestBooking /> },
+      { path: 'track', element: <TrackingPage /> },
+      { path: 'track/:trackingId', element: <TrackingPage /> },
       {
         path: 'admin/dashboard',
         element: <AdminDashboard />,

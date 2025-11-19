@@ -1,7 +1,10 @@
 import Shipment from '../models/Shipment.js';
 import User from '../models/User.js';
+import Payment from '../models/Payment.js';
+import Notification from '../models/Notification.js';
+import { startOfMonth, endOfMonth } from 'date-fns';
 
-// @desc    Get all shipments with pagination and search
+// @desc    Get all shipments with pagination, search, and filtering
 // @route   GET /api/shipments
 // @access  Private/Admin
 export const getShipments = async (req, res) => {
@@ -9,31 +12,24 @@ export const getShipments = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const search = req.query.search || '';
+    const statusFilter = req.query.status || 'All';
 
-    const query = search
-      ? {
-          $or: [
-            { shipmentId: { $regex: search, $options: 'i' } },
-            // We need to search on the customer's name, which requires a more complex query
-          ],
-        }
-      : {};
+    const query = {};
 
-    // If searching, we need to find customers first
     if (search) {
-      const customers = await User.find({ name: { $regex: search, $options: 'i' }, role: 'customer' }).select('_id');
-      const customerIds = customers.map(c => c._id);
-      if (customerIds.length > 0) {
-        query.$or.push({ customer: { $in: customerIds } });
-      }
+      query.shipmentId = { $regex: search, $options: 'i' };
+    }
+
+    if (statusFilter && statusFilter !== 'All') {
+      query.status = statusFilter;
     }
 
     const shipments = await Shipment.find(query)
       .populate('customer', 'name')
       .populate('agent', 'name')
       .sort({ createdAt: -1 })
-      .limit(limit)
-      .skip((page - 1) * limit);
+      .skip((page - 1) * limit)
+      .limit(limit);
 
     const total = await Shipment.countDocuments(query);
 
@@ -59,26 +55,7 @@ export const getShipments = async (req, res) => {
 // @access  Private/Admin
 export const createShipment = async (req, res) => {
   try {
-    const { customerName, origin, destination, weight, packageDetails, status, agent } = req.body;
-
-    // For simplicity, we'll find the first customer that matches the name.
-    // In a real app, you'd likely use a customer ID from a dropdown.
-    const customer = await User.findOne({ name: customerName, role: 'customer' });
-    if (!customer) {
-      return res.status(404).json({ status: 'fail', message: 'Customer not found' });
-    }
-
-    const newShipment = await Shipment.create({
-      customer: customer._id,
-      origin,
-      destination,
-      weight,
-      packageDetails,
-      status,
-      agent: agent || null,
-      cost: Math.max(20, weight * 5), // Dummy cost calculation
-    });
-
+    const newShipment = await Shipment.create(req.body);
     res.status(201).json({ status: 'success', data: { shipment: newShipment } });
   } catch (error) {
     res.status(400).json({ status: 'fail', message: error.message });
@@ -90,14 +67,7 @@ export const createShipment = async (req, res) => {
 // @access  Private/Admin
 export const updateShipment = async (req, res) => {
   try {
-    const { agent, ...restOfBody } = req.body;
-    const updateData = { ...restOfBody };
-
-    // Handle agent assignment
-    if (agent) updateData.agent = agent;
-    else updateData.$unset = { agent: 1 }; // Unassign agent if not provided
-
-    const shipment = await Shipment.findByIdAndUpdate(req.params.id, updateData, {
+    const shipment = await Shipment.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
     });
@@ -117,7 +87,12 @@ export const updateShipment = async (req, res) => {
 // @access  Private/Admin
 export const deleteShipment = async (req, res) => {
   try {
-    await Shipment.findByIdAndDelete(req.params.id);
+    const shipment = await Shipment.findByIdAndDelete(req.params.id);
+
+    if (!shipment) {
+      return res.status(404).json({ status: 'fail', message: 'No shipment found with that ID' });
+    }
+
     res.status(204).json({ status: 'success', data: null });
   } catch (error) {
     res.status(400).json({ status: 'fail', message: error.message });
@@ -129,17 +104,97 @@ export const deleteShipment = async (req, res) => {
 // @access  Private/Admin
 export const getShipmentSummary = async (req, res) => {
   try {
-    const totalShipments = await Shipment.countDocuments();
+    const total = await Shipment.countDocuments();
+    const pending = await Shipment.countDocuments({ status: 'Pending' });
     const inTransit = await Shipment.countDocuments({ status: 'In Transit' });
     const delivered = await Shipment.countDocuments({ status: 'Delivered' });
-    const pending = await Shipment.countDocuments({ status: { $in: ['Pending', 'Delayed'] } });
-    const cancelled = await Shipment.countDocuments({ status: 'Cancelled' });
 
     res.status(200).json({
       status: 'success',
-      data: { totalShipments, inTransit, delivered, pending, cancelled },
+      data: {
+        total,
+        pending,
+        inTransit,
+        delivered,
+      },
     });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+// @desc    Create a shipment for a guest user
+// @route   POST /api/shipments/guest-booking
+// @access  Public
+export const createGuestShipment = async (req, res) => {
+  try {
+    const { senderName, senderEmail, senderPhone, origin, destination, weight, packageDetails } = req.body;
+
+    if (!senderName || !senderEmail || !senderPhone || !origin || !destination || !weight || !packageDetails) {
+      return res.status(400).json({ status: 'fail', message: 'Please provide all required fields.' });
+    }
+
+    // Find or create a guest user
+    let guestUser = await User.findOne({ email: senderEmail, role: 'guest' });
+
+    if (!guestUser) {
+      // Create a new user document without running full validators,
+      // as guests don't have passwords.
+      guestUser = new User({
+        name: senderName,
+        email: senderEmail,
+        phone: senderPhone,
+        role: 'guest',
+      });
+      await guestUser.save({ validateBeforeSave: false });
+    } else {
+      // Optionally update guest info if they book again
+      guestUser.name = senderName;
+      guestUser.phone = senderPhone;
+      await guestUser.save({ validateBeforeSave: false });
+    }
+
+    const newShipment = await Shipment.create({
+      customer: guestUser._id,
+      origin,
+      destination,
+      weight,
+      packageDetails,
+      status: 'Pending',
+      cost: Math.max(20, weight * 5), // Dummy cost calculation
+      dispatchDate: new Date(),
+      trackingHistory: [
+        {
+          status: 'Pending',
+          location: origin,
+          timestamp: new Date(),
+        },
+      ],
+    });
+
+    await Payment.create({
+      paymentId: `INV-${newShipment.shipmentId}`,
+      customer: guestUser._id,
+      shipment: newShipment._id,
+      amount: newShipment.cost,
+      method: 'M-Pesa',
+      status: 'Pending',
+      transactionDate: new Date(),
+    });
+
+    const admins = await User.find({ role: 'admin' });
+    const notificationPromises = admins.map(admin =>
+      Notification.create({
+        user: admin._id,
+        text: `New guest shipment (${newShipment.shipmentId}) booked by ${guestUser.name}.`,
+        link: '/admin/dashboard/shipments',
+      })
+    );
+    await Promise.all(notificationPromises);
+
+    res.status(201).json({ status: 'success', data: { shipment: newShipment } });
+  } catch (error) {
+    console.error('Guest Shipment Error:', error);
+    res.status(400).json({ status: 'fail', message: error.message });
   }
 };

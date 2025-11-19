@@ -8,7 +8,7 @@ const Footer = () => {
         <div className="grid md:grid-cols-3 gap-8 text-center md:text-left">
           <div>
             <h3 className="text-xl font-bold text-white mb-4">BongoExpressCargo</h3>
-            <p>123 Logistics Lane, Transport City, 12345</p>
+            <p>Minhaj Tower, Unit Floor Plot 05, Carlifonia Kamkunji Nairobi</p>
             <div className="flex justify-center md:justify-start space-x-4 mt-4">
               <a href="#" className="hover:text-accent"><FaFacebook size={24} /></a>
               <a href="#" className="hover:text-accent"><FaTwitter size={24} /></a>

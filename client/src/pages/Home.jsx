@@ -1,6 +1,7 @@
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaShippingFast, FaGlobe, FaHeadset, FaPlane, FaTruck, FaWarehouse, FaBoxOpen, FaUserTie } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -8,45 +9,62 @@ const fadeIn = {
 };
 
 // 🟦 HERO SECTION
-const HeroSection = () => (
-  <div
-    className="relative h-[70vh] md:h-[90vh] bg-cover bg-center flex items-center justify-center text-white"
-    style={{
-      backgroundImage: "url('https://streamlinetransportlogistics.com/wp-content/uploads/2024/11/R.jpeg')",
-    }}
-  >
-    {/* Gradient overlay for elegant tone */}
-    <div className="absolute inset-0 bg-linear-to-r from-primary/90 via-black/70 to-black/40"></div>
+const HeroSection = () => {
+  const [trackingId, setTrackingId] = useState('');
+  const navigate = useNavigate();
 
-    <motion.div
-      className="relative z-10 text-center p-6"
-      initial="hidden"
-      animate="visible"
-      variants={fadeIn}
+  const handleTrackSubmit = (e) => {
+    e.preventDefault();
+    if (trackingId.trim()) {
+      navigate(`/track/${trackingId.trim()}`);
+    }
+  };
+
+  return (
+    <div
+      className="relative h-[70vh] md:h-[90vh] bg-cover bg-center flex items-center justify-center text-white"
+      style={{
+        backgroundImage: "url('https://streamlinetransportlogistics.com/wp-content/uploads/2024/11/R.jpeg')",
+      }}
     >
-      <h1 className="text-4xl md:text-6xl font-extrabold mb-4 leading-tight">
-        Delivering Beyond Borders
-      </h1>
-      <p className="text-lg md:text-2xl mb-8 max-w-3xl mx-auto text-gray-100">
-        Reliable, Fast, and Secure Logistics Solutions.
-      </p>
-      <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <Link
-          to="/contact"
-          className="bg-accent text-primary font-bold py-3 px-8 rounded-lg hover:bg-yellow-400 transition-colors text-lg text-center"
-        >
-          Book Shipment
-        </Link>
-        <button
-          className="bg-transparent border-2 border-white text-white font-bold py-3 px-8 rounded-lg hover:bg-white hover:text-primary transition-colors text-lg"
-          onClick={() => alert('Tracking feature coming soon!')}
-        >
-          Track Package
-        </button>
-      </div>
-    </motion.div>
-  </div>
-);
+      {/* Gradient overlay for elegant tone */}
+      <div className="absolute inset-0 bg-linear-to-r from-primary/90 via-black/70 to-black/40"></div>
+
+      <motion.div
+        className="relative z-10 text-center p-6 w-full max-w-4xl"
+        initial="hidden"
+        animate="visible"
+        variants={fadeIn}
+      >
+        <h1 className="text-4xl md:text-6xl font-extrabold mb-4 leading-tight">
+          Delivering Beyond Borders
+        </h1>
+        <p className="text-lg md:text-2xl mb-8 max-w-3xl mx-auto text-gray-100">
+          Reliable, Fast, and Secure Logistics Solutions.
+        </p>
+        <div className="mt-8 max-w-xl mx-auto">
+          <form onSubmit={handleTrackSubmit}>
+            <div className="flex flex-col sm:flex-row gap-2 bg-white/20 backdrop-blur-sm p-2 rounded-xl border border-white/30">
+              <input
+                type="text"
+                value={trackingId}
+                onChange={(e) => setTrackingId(e.target.value)}
+                placeholder="Enter your tracking ID"
+                className="grow w-full px-5 py-3 border-0 bg-transparent text-white placeholder-gray-300 focus:ring-0 outline-none"
+              />
+              <button type="submit" className="bg-accent text-primary font-bold py-3 px-8 rounded-lg hover:bg-yellow-400 transition-colors text-lg">
+                Track Package
+              </button>
+            </div>
+          </form>
+          <Link to="/book-shipment" className="mt-4 inline-block bg-transparent border-2 border-white text-white font-bold py-3 px-8 rounded-lg hover:bg-white hover:text-primary transition-colors text-lg">
+            Book a Shipment
+          </Link>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 
 // 🟡 FEATURES SECTION
 const FeatureCard = ({ icon, title, description }) => (
@@ -194,9 +212,9 @@ const TestimonialsSection = () => (
     <div className="container mx-auto px-6 text-center">
       <h2 className="text-3xl font-bold mb-12 text-primary">What Our Clients Say</h2>
       <div className="grid md:grid-cols-3 gap-8">
-        <TestimonialCard quote="BongoExpressCargo transformed our supply chain. Their efficiency and customer service are second to none." name="John Doe" company="Innovate Inc." />
-        <TestimonialCard quote="The best logistics partner we've ever had. Always on time, always reliable." name="Jane Smith" company="Marketplace Co." />
-        <TestimonialCard quote="Their global reach and customs expertise have been a game-changer for our international business." name="Samuel Green" company="Global Exports" />
+        <TestimonialCard quote="BongoExpressCargo transformed our supply chain. Their efficiency and customer service are second to none." name="Mohamed Ali" company="Innovate Inc." />
+        <TestimonialCard quote="The best logistics partner we've ever had. Always on time, always reliable." name="Amina Hassan" company="Marketplace Co." />
+        <TestimonialCard quote="Their global reach and customs expertise have been a game-changer for our international business." name="James Mwangi" company="Global Exports" />
       </div>
     </div>
   </section>

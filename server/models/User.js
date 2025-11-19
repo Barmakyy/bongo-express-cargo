@@ -40,6 +40,11 @@ const userSchema = new mongoose.Schema({
     minlength: 8,
     select: false, // Do not include in query results by default
   },
+  passwordResetToken: String,
+  passwordResetExpires: Date,
+  twoFactorEnabled: { type: Boolean, default: false },
+  twoFactorSecret: { type: String, select: false },
+  twoFactorRecoveryCodes: { type: [String], select: false },
 },
 {
   timestamps: true, // Add createdAt and updatedAt fields

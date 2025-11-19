@@ -9,7 +9,7 @@ function App() {
   return (
     <div className="flex flex-col min-h-screen bg-light text-gray-800">
       {!isDashboard && <Navbar />}
-      <main className="flex-grow">
+      <main className="grow">
         <Outlet />
       </main>
       {!isDashboard && <Footer />}
