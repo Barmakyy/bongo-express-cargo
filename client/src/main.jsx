@@ -12,10 +12,16 @@ import AdminDashboard from './pages/AdminDashboard.jsx';
 import DashboardOverview from './pages/DashboardOverview.jsx';
 import Shipments from './pages/Shipments.jsx';
 import Customers from './pages/Customers.jsx';
-import Agents from './pages/Agents.jsx';
+import Staff from './pages/Staff.jsx';
 import Payments from './pages/Payments.jsx';
 import Settings from './pages/Settings.jsx';
 import Messages from './pages/Messages.jsx';
+import StaffDashboardOverview from './pages/StaffDashboardOverview.jsx';
+import StaffShipments from './pages/StaffShipments.jsx';
+import StaffMessages from './pages/StaffMessages.jsx';
+import StaffPayments from './pages/StaffPayments.jsx';
+import StaffCreateShipment from './pages/StaffCreateShipment.jsx';
+import StaffDashboard from './pages/StaffDashboard.jsx';
 import CustomerDashboard from './pages/CustomerDashboard.jsx';
 import CustomerDashboardOverview from './pages/CustomerDashboardOverview.jsx';
 import CustomerMessages from './pages/CustomerMessages.jsx';
@@ -54,7 +60,7 @@ const router = createBrowserRouter([
           { index: true, element: <DashboardOverview /> },
           { path: 'shipments', element: <Shipments /> },
           { path: 'customers', element: <Customers /> },
-          { path: 'agents', element: <Agents /> },
+          { path: 'staff', element: <Staff /> },
           { path: 'payments', element: <Payments /> },
           { path: 'settings', element: <Settings /> },
           { path: 'messages', element: <Messages /> },
@@ -70,6 +76,18 @@ const router = createBrowserRouter([
           { path: 'payments', element: <CustomerPayments /> },
           { path: 'settings', element: <CustomerSettings /> },
           { path: 'shipments/:id/track', element: <ShipmentTracker /> },
+        ],
+      },
+      {
+        path: 'staff/dashboard',
+        element: <StaffDashboard />,
+        children: [
+          { index: true, element: <StaffDashboardOverview /> },
+          { path: 'shipments', element: <StaffShipments /> },
+          { path: 'create-shipment', element: <StaffCreateShipment /> },
+          { path: 'messages', element: <StaffMessages /> },
+          { path: 'payments', element: <StaffPayments /> },
+          { path: 'settings', element: <CustomerSettings /> },
         ],
       },
     ],

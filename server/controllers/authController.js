@@ -53,7 +53,12 @@ export const restrictTo = (...roles) => {
 export const register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
-    const newUser = await User.create({ name, email, password, role });
+    const newUser = await User.create({
+      name,
+      email,
+      password,
+      role: role || 'customer' // Ensure role is set, default to 'customer' if not provided
+    });
 
     res.status(201).json({
       status: 'success',
@@ -119,6 +124,10 @@ export const login = async (req, res) => {
         message: 'Please enter your 2FA token.',
       });
     }
+
+    // Update last login timestamp
+    user.lastLogin = new Date();
+    await user.save({ validateBeforeSave: false });
 
     const token = signToken(user._id);
 
@@ -194,6 +203,10 @@ export const verifyTwoFactorLogin = async (req, res) => {
     if (!verified) {
       return res.status(401).json({ status: 'fail', message: 'Invalid 2FA token.' });
     }
+
+    // Update last login timestamp
+    user.lastLogin = new Date();
+    await user.save({ validateBeforeSave: false });
 
     const token = signToken(user._id);
     user.password = undefined;

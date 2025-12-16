@@ -222,7 +222,7 @@ const TestimonialsSection = () => (
 
 // 🚚 CTA SECTION
 const CTASection = () => (
-  <section className="py-20 bg-primary text-white text-center">
+  <section className="py-20 bg-gray-100 text-center">
     <motion.div 
       className="container mx-auto px-6"
       initial="hidden"
@@ -230,8 +230,8 @@ const CTASection = () => (
       viewport={{ once: true, amount: 0.5 }}
       variants={fadeIn}
     >
-      <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Ship with Confidence?</h2>
-      <p className="text-lg md:text-xl mb-8 text-gray-200">
+      <h2 className="text-3xl md:text-4xl font-bold mb-4 text-primary">Ready to Ship with Confidence?</h2>
+      <p className="text-lg md:text-xl mb-8 text-gray-600">
         Let’s move your business forward — contact us today.
       </p>
       <Link

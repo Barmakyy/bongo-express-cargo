@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['customer', 'admin', 'agent'],
+    enum: ['customer', 'admin', 'staff'],
     default: 'customer',
   },
   status: {
@@ -30,6 +30,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  branch: {
+    type: String,
+    enum: ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret'],
+    default: 'Nairobi',
+  },
   profilePicture: {
     type: String,
     default: '',
@@ -40,6 +45,7 @@ const userSchema = new mongoose.Schema({
     minlength: 8,
     select: false, // Do not include in query results by default
   },
+  lastLogin: { type: Date },
   passwordResetToken: String,
   passwordResetExpires: Date,
   twoFactorEnabled: { type: Boolean, default: false },

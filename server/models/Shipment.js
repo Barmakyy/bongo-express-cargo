@@ -12,11 +12,25 @@ const shipmentSchema = new mongoose.Schema(
     customer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      // No longer required, as guest details can be used instead
     },
-    agent: {
+    guestDetails: {
+      name: String,
+      phone: String,
+    },
+    createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
+    },
+    staff: { // The staff member assigned to handle the shipment
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    branch: {
+      type: String,
+      // This is not strictly required for all shipments (e.g., guest bookings)
+      // but is set when a staff member creates one.
+      // required: [true, 'A shipment must be associated with a branch.'],
     },
     origin: {
       type: String,
@@ -35,6 +49,9 @@ const shipmentSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    estimatedDelivery: {
+      type: Date,
+    },
     weight: {
       type: Number,
     },
@@ -46,6 +63,13 @@ const shipmentSchema = new mongoose.Schema(
       required: true,
       default: 0,
     },
+    trackingHistory: [
+      {
+        status: String,
+        location: String,
+        timestamp: { type: Date, default: Date.now },
+      },
+    ],
   },
   { timestamps: true },
 );

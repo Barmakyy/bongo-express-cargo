@@ -17,7 +17,7 @@ const paymentSchema = new mongoose.Schema(
     customer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      // Not required since we can have guest shipments without customer accounts
     },
     amount: {
       type: Number,

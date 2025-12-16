@@ -33,13 +33,14 @@ const StatusBadge = ({ status }) => (
 const Shipments = () => {
   const [shipments, setShipments] = useState([]);
   const [summary, setSummary] = useState({});
-  const [agents, setAgents] = useState([]);
+  const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
   const { showNotification } = useNotification();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const initialFormState = {
     customerName: '',
+    customerPhone: '',
     origin: '',
     destination: '',
     weight: '',
@@ -51,6 +52,9 @@ const Shipments = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 10;
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [branchFilter, setBranchFilter] = useState('All');
+  const [staffFilter, setStaffFilter] = useState('All');
   const [editingShipment, setEditingShipment] = useState(null);
 
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -63,15 +67,15 @@ const Shipments = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [shipmentsRes, summaryRes, agentsRes] = await Promise.all([
-        api.get(`/shipments?page=${currentPage}&limit=${limit}&search=${searchTerm}`),
+      const [shipmentsRes, summaryRes, staffRes] = await Promise.all([
+        api.get(`/shipments?page=${currentPage}&limit=${limit}&search=${searchTerm}&status=${statusFilter}&branch=${branchFilter}&staff=${staffFilter}`),
         api.get('/shipments/summary'),
-        api.get('/agents/list'),
+        api.get('/staff/list'),
       ]);
       setShipments(shipmentsRes.data.data.shipments);
       setPagination(shipmentsRes.data.data.pagination);
       setSummary(summaryRes.data.data);
-      setAgents(agentsRes.data.data.agents);
+      setStaffList(staffRes.data.data.staff);
     } catch (err) {
       showNotification('Failed to fetch shipment data.', 'error');
       console.error(err);
@@ -90,7 +94,7 @@ const Shipments = () => {
       else fetchData();
     }, 300); // Debounce search
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, statusFilter, branchFilter, staffFilter]);
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
@@ -128,6 +132,7 @@ const Shipments = () => {
     setEditingShipment(shipment);
     setCurrentShipment({
       customerName: shipment.customer?.name || '',
+      customerPhone: shipment.customer?.phone || shipment.guestDetails?.phone || '',
       origin: shipment.origin,
       destination: shipment.destination,
       weight: shipment.weight,
@@ -182,7 +187,7 @@ const Shipments = () => {
 
       {/* 2. Shipment Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-        <StatCard title="Total Shipments" value={summary.totalShipments || 0} icon={<FaBoxOpen size={24} className="text-gray-500" />} color="bg-gray-50" />
+        <StatCard title="Total Shipments" value={summary.total || 0} icon={<FaBoxOpen size={24} className="text-gray-500" />} color="bg-gray-50" />
         <StatCard title="In Transit" value={summary.inTransit || 0} icon={<FaTruck size={24} className="text-blue-500" />} color="bg-blue-50" />
         <StatCard title="Delivered" value={summary.delivered || 0} icon={<FaCheckCircle size={24} className="text-green-500" />} color="bg-green-50" />
         <StatCard title="Pending/Delayed" value={summary.pending || 0} icon={<FaExclamationTriangle size={24} className="text-yellow-500" />} color="bg-yellow-50" />
@@ -191,8 +196,9 @@ const Shipments = () => {
 
       {/* 3. Shipment Table */}
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-primary">All Shipments</h3>
+        <div className="flex flex-col md:flex-row justify-between md:items-center mb-4 gap-4">
+          <h3 className="text-lg font-semibold text-primary shrink-0">All Shipments</h3>
+          <div className="flex flex-wrap items-center gap-4 w-full">
           <div className="relative">
             <FaSearch className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
             <input
@@ -200,8 +206,26 @@ const Shipments = () => {
               placeholder="Search by customer or ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-gray-100 focus:bg-white focus:ring-2 focus:ring-primary border border-gray-200 rounded-full py-2 pl-10 pr-4 transition-all"
+              className="bg-gray-100 focus:bg-white focus:ring-2 focus:ring-primary border border-gray-200 rounded-full py-2 pl-10 pr-4 transition-all w-full md:w-auto"
             />
+          </div>
+            <select onChange={(e) => setStatusFilter(e.target.value)} className="bg-gray-100 border border-gray-200 rounded-md py-2 px-3 text-sm">
+              <option value="All">All Statuses</option>
+              <option>Pending</option>
+              <option>In Transit</option>
+              <option>Delivered</option>
+              <option>Cancelled</option>
+            </select>
+            <select onChange={(e) => setBranchFilter(e.target.value)} className="bg-gray-100 border border-gray-200 rounded-md py-2 px-3 text-sm">
+              <option value="All">All Branches</option>
+              <option>Nairobi</option>
+              <option>Mombasa</option>
+              <option>Kisumu</option>
+            </select>
+            <select onChange={(e) => setStaffFilter(e.target.value)} className="bg-gray-100 border border-gray-200 rounded-md py-2 px-3 text-sm">
+              <option value="All">All Staff</option>
+              {staffList.map(staff => <option key={staff._id} value={staff._id}>{staff.name}</option>)}
+            </select>
           </div>
         </div>
 
@@ -212,22 +236,24 @@ const Shipments = () => {
                 <th className="p-3 text-sm font-semibold text-gray-600">Shipment ID</th>
                 <th className="p-3 text-sm font-semibold text-gray-600">Customer</th>
                 <th className="p-3 text-sm font-semibold text-gray-600">Origin</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Agent</th>
                 <th className="p-3 text-sm font-semibold text-gray-600">Destination</th>
+                <th className="p-3 text-sm font-semibold text-gray-600">Branch</th>
+                <th className="p-3 text-sm font-semibold text-gray-600">Staff</th>
                 <th className="p-3 text-sm font-semibold text-gray-600">Status</th>
                 <th className="p-3 text-sm font-semibold text-gray-600">Date</th>
                 <th className="p-3 text-sm font-semibold text-gray-600">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan="7" className="text-center p-4">Loading...</td></tr>}
+              {loading && <tr><td colSpan="9" className="text-center p-4">Loading...</td></tr>}
               {!loading && shipments.map((shipment) => (
                 <tr key={shipment._id} className="border-b hover:bg-gray-50">
                   <td className="p-3 text-sm font-medium text-primary">{shipment.shipmentId}</td>
-                  <td className="p-3 text-sm text-gray-700">{shipment.customer?.name || 'N/A'}</td>
+                  <td className="p-3 text-sm text-gray-700">{shipment.customer?.name || shipment.guestDetails?.name || 'N/A'}</td>
                   <td className="p-3 text-sm text-gray-700">{shipment.origin}</td>
-                  <td className="p-3 text-sm text-gray-500">{shipment.agent?.name || 'Unassigned'}</td>
                   <td className="p-3 text-sm text-gray-700">{shipment.destination}</td>
+                  <td className="p-3 text-sm text-gray-700">{shipment.branch}</td>
+                  <td className="p-3 text-sm text-gray-500">{shipment.createdBy?.name || 'N/A'}</td>
                   <td className="p-3 text-sm"><StatusBadge status={shipment.status} /></td>
                   <td className="p-3 text-sm text-gray-500">{format(new Date(shipment.dispatchDate), 'MMM dd, yyyy')}</td>
                   <td className="p-3 text-sm">
@@ -289,6 +315,10 @@ const Shipments = () => {
                         <input type="text" value={currentShipment.customerName} onChange={(e) => setCurrentShipment({ ...currentShipment, customerName: e.target.value })} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" placeholder="e.g., John Doe" required disabled={!!editingShipment} />
                       </div>
                       <div>
+                        <label className="block text-sm font-medium text-gray-700">Customer Phone</label>
+                        <input type="tel" value={currentShipment.customerPhone} onChange={(e) => setCurrentShipment({ ...currentShipment, customerPhone: e.target.value })} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" placeholder="e.g., +254712345678" required disabled={!!editingShipment} />
+                      </div>
+                      <div>
                         <label className="block text-sm font-medium text-gray-700">Origin</label>
                         <input type="text" value={currentShipment.origin} onChange={(e) => setCurrentShipment({ ...currentShipment, origin: e.target.value })} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" placeholder="e.g., Mombasa" required />
                       </div>
@@ -321,10 +351,10 @@ const Shipments = () => {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Assign Agent</label>
+                        <label className="block text-sm font-medium text-gray-700">Assign Staff</label>
                         <select value={currentShipment.agent} onChange={(e) => setCurrentShipment({ ...currentShipment, agent: e.target.value })} className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
                           <option value="">Unassigned</option>
-                          {agents.map(agent => <option key={agent._id} value={agent._id}>{agent.name}</option>)}
+                          {staffList.map(staff => <option key={staff._id} value={staff._id}>{staff.name}</option>)}
                         </select>
                       </div>
                     </div>
@@ -370,11 +400,15 @@ const Shipments = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm font-medium text-gray-500">Customer</p>
-                    <p className="font-semibold">{selectedShipment.customer?.name || 'N/A'}</p>
+                    <p className="font-semibold">{selectedShipment.customer?.name || selectedShipment.guestDetails?.name || 'N/A'}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Agent</p>
-                    <p className="font-semibold">{selectedShipment.agent?.name || 'Unassigned'}</p>
+                    <p className="text-sm font-medium text-gray-500">Customer Phone</p>
+                    <p className="font-semibold">{selectedShipment.customer?.phone || selectedShipment.guestDetails?.phone || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Staff</p>
+                    <p className="font-semibold">{selectedShipment.agent?.name || 'Unassigned'}</p> {/* `agent` field in Shipment model is correct */}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">

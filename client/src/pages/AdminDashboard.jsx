@@ -34,7 +34,7 @@ const navItems = [
   { to: '/admin/dashboard', icon: <FaTachometerAlt />, text: 'Dashboard' },
   { to: '/admin/dashboard/shipments', icon: <FaTruck />, text: 'Shipments' },
   { to: '/admin/dashboard/customers', icon: <FaUsers />, text: 'Customers' },
-  { to: '/admin/dashboard/agents', icon: <FaUserSecret />, text: 'Agents' },
+  { to: '/admin/dashboard/staff', icon: <FaUserSecret />, text: 'Staff' },
   { to: '/admin/dashboard/payments', icon: <FaCreditCard />, text: 'Payments' },
   { to: '/admin/dashboard/messages', icon: <FaEnvelope />, text: 'Messages' },
   { to: '/admin/dashboard/settings', icon: <FaCog />, text: 'Settings' },

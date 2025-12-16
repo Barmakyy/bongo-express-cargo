@@ -145,7 +145,7 @@ const Services = () => {
       </section>
 
       {/* 🟢 Call to Action */}
-      <section className="py-20 bg-primary text-white text-center">
+      <section className="py-20 bg-gray-100 text-center">
         <motion.div
           className="max-w-3xl mx-auto px-6"
           initial="hidden"
@@ -153,10 +153,10 @@ const Services = () => {
           viewport={{ once: true }}
           variants={fadeIn}
         >
-          <h2 className="text-4xl font-bold mb-6">
+          <h2 className="text-4xl font-bold mb-6 text-primary">
             Ready to Ship with BongoExpressCargo?
           </h2>
-          <p className="text-lg mb-8 text-gray-100">
+          <p className="text-lg mb-8 text-gray-600">
             Partner with us for seamless delivery, global coverage, and real-time tracking.
           </p>
           <Link

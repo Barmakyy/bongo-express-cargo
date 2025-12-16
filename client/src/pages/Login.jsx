@@ -3,12 +3,14 @@ import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/axios';
 import { AuthContext } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [twoFactorToken, setTwoFactorToken] = useState('');
   const [is2faStep, setIs2faStep] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useContext(AuthContext);
   const { showNotification } = useNotification();
   const navigate = useNavigate();
@@ -27,7 +29,11 @@ const Login = () => {
         const { token, data } = response.data;
         login(data.user, token);
         showNotification('Login successful!', 'success');
-        if (data.user.role === 'admin') navigate('/admin/dashboard');
+        if (data.user.role === 'admin') {
+          navigate('/admin/dashboard');
+        } else if (data.user.role === 'staff') {
+          navigate('/staff/dashboard');
+        }
         else navigate('/customer/dashboard');
       } catch (err) {
         showNotification(err.response?.data?.message || 'Login failed. Please try again.', 'error');
@@ -50,6 +56,8 @@ const Login = () => {
         // Redirect based on role
         if (data.user.role === 'admin') {
           navigate('/admin/dashboard');
+        } else if (data.user.role === 'staff') {
+          navigate('/staff/dashboard');
         } else {
           navigate('/customer/dashboard');
         }
@@ -79,16 +87,23 @@ const Login = () => {
                   required
                 />
               </div>
-              <div className="mb-4">
+              <div className="mb-4 relative">
                 <label className="block text-gray-700">Password</label>
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary pr-10"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 top-7"
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
               </div>
               <div className="text-sm text-right mb-6">
                 <Link to="/forgot-password" className="font-medium text-primary hover:text-opacity-80">

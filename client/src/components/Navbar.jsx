@@ -32,7 +32,12 @@ const Navbar = () => {
     { to: '/contact', text: 'Contact' },
   ];
 
-  const dashboardPath = user?.role === 'admin' ? '/admin/dashboard' : '/customer/dashboard';
+  let dashboardPath = '/customer/dashboard'; // Default for customer
+  if (user?.role === 'admin') {
+    dashboardPath = '/admin/dashboard';
+  } else if (user?.role === 'staff') {
+    dashboardPath = '/staff/dashboard';
+  }
 
   const mobileMenuVariants = {
     hidden: { opacity: 0, y: -20 },

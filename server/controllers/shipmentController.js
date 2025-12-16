@@ -2,7 +2,7 @@ import Shipment from '../models/Shipment.js';
 import User from '../models/User.js';
 import Payment from '../models/Payment.js';
 import Notification from '../models/Notification.js';
-import { startOfMonth, endOfMonth } from 'date-fns';
+import { startOfDay, endOfDay } from 'date-fns';
 
 // @desc    Get all shipments with pagination, search, and filtering
 // @route   GET /api/shipments
@@ -13,6 +13,9 @@ export const getShipments = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const search = req.query.search || '';
     const statusFilter = req.query.status || 'All';
+    const branchFilter = req.query.branch || 'All';
+    const staffFilter = req.query.staff || 'All';
+    const dateFilter = req.query.date ? new Date(req.query.date) : null;
 
     const query = {};
 
@@ -24,9 +27,24 @@ export const getShipments = async (req, res) => {
       query.status = statusFilter;
     }
 
+    if (branchFilter && branchFilter !== 'All') {
+      query.branch = branchFilter;
+    }
+
+    if (staffFilter && staffFilter !== 'All') {
+      query.createdBy = staffFilter;
+    }
+
+    if (dateFilter) {
+      query.dispatchDate = {
+        $gte: startOfDay(dateFilter),
+        $lte: endOfDay(dateFilter),
+      };
+    }
+
     const shipments = await Shipment.find(query)
       .populate('customer', 'name')
-      .populate('agent', 'name')
+      .populate('createdBy', 'name') // Populate the staff member who created it
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
@@ -55,7 +73,26 @@ export const getShipments = async (req, res) => {
 // @access  Private/Admin
 export const createShipment = async (req, res) => {
   try {
-    const newShipment = await Shipment.create(req.body);
+    const { customerName, customerPhone, ...shipmentDetails } = req.body;
+
+    // Attempt to find a registered customer by phone number.
+    const registeredCustomer = await User.findOne({ phone: customerPhone, role: 'customer' });
+
+    const shipmentData = {
+      ...shipmentDetails,
+      // If a registered customer is found, link their ID.
+      customer: registeredCustomer ? registeredCustomer._id : null,
+      // If no registered customer is found, save the name as guest details.
+      guestDetails: !registeredCustomer ? {
+        name: customerName,
+        phone: customerPhone
+      } : null,
+      // Assign the admin who created it
+      createdBy: req.user._id,
+      branch: req.user.branch, // Assign the admin's branch
+    };
+
+    const newShipment = await Shipment.create(shipmentData);
     res.status(201).json({ status: 'success', data: { shipment: newShipment } });
   } catch (error) {
     res.status(400).json({ status: 'fail', message: error.message });
@@ -134,28 +171,15 @@ export const createGuestShipment = async (req, res) => {
       return res.status(400).json({ status: 'fail', message: 'Please provide all required fields.' });
     }
 
-    // Find or create a guest user
-    let guestUser = await User.findOne({ email: senderEmail, role: 'guest' });
-
-    if (!guestUser) {
-      // Create a new user document without running full validators,
-      // as guests don't have passwords.
-      guestUser = new User({
-        name: senderName,
-        email: senderEmail,
-        phone: senderPhone,
-        role: 'guest',
-      });
-      await guestUser.save({ validateBeforeSave: false });
-    } else {
-      // Optionally update guest info if they book again
-      guestUser.name = senderName;
-      guestUser.phone = senderPhone;
-      await guestUser.save({ validateBeforeSave: false });
-    }
+    // Check if a registered customer exists with this email
+    const registeredCustomer = await User.findOne({ email: senderEmail, role: 'customer' });
 
     const newShipment = await Shipment.create({
-      customer: guestUser._id,
+      customer: registeredCustomer ? registeredCustomer._id : null,
+      guestDetails: !registeredCustomer ? {
+        name: senderName,
+        phone: senderPhone,
+      } : null,
       origin,
       destination,
       weight,
@@ -174,7 +198,7 @@ export const createGuestShipment = async (req, res) => {
 
     await Payment.create({
       paymentId: `INV-${newShipment.shipmentId}`,
-      customer: guestUser._id,
+      customer: registeredCustomer ? registeredCustomer._id : null,
       shipment: newShipment._id,
       amount: newShipment.cost,
       method: 'M-Pesa',
@@ -186,7 +210,7 @@ export const createGuestShipment = async (req, res) => {
     const notificationPromises = admins.map(admin =>
       Notification.create({
         user: admin._id,
-        text: `New guest shipment (${newShipment.shipmentId}) booked by ${guestUser.name}.`,
+        text: `New guest shipment (${newShipment.shipmentId}) booked by ${senderName}.`,
         link: '/admin/dashboard/shipments',
       })
     );

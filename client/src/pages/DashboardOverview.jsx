@@ -47,7 +47,7 @@ const DashboardOverview = () => {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/dashboard/stats');
+        const response = await api.get('/dashboard/stats'); // This should be the correct endpoint
         setStats(response.data.data);
         setError('');
       } catch (err) {
@@ -171,22 +171,8 @@ const DashboardOverview = () => {
       </div>
 
       {/* Row 3: Top Agents & Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
-        <motion.div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}>
-          <h3 className="text-lg font-semibold text-primary mb-4">Top Performing Agents</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart layout="vertical" data={stats?.charts?.topAgents || []} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-              <XAxis type="number" tick={{ fill: '#6b7280' }} />
-              <YAxis type="category" dataKey="name" tick={{ fill: '#6b7280' }} width={80} />
-              <Tooltip cursor={{ fill: 'rgba(240, 240, 240, 0.5)' }} contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: '0.5rem', border: '1px solid #e0e0e0' }} />
-              <Legend />
-              <Bar dataKey="deliveries" fill="#1890FF" radius={[0, 4, 4, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </motion.div>
-
-        <motion.div className="bg-white p-6 rounded-lg shadow-md" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }}>
+      <div className="grid grid-cols-1 gap-6 mt-8">
+        <motion.div className="bg-white p-6 rounded-lg shadow-md" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}>
           <h3 className="text-lg font-semibold text-primary mb-4">Recent Activity</h3>
           <ul className="space-y-4">
             {(stats?.recentActivities || []).map(activity => (
