@@ -24,7 +24,7 @@ const app = express();
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
-    ? process.env.FRONTEND_URL || 'https://your-project-name.vercel.app'
+    ? process.env.FRONTEND_URL || 'https://bongoexpresscargo.vercel.app/'
     : 'http://localhost:5173',
   credentials: true
 }));
