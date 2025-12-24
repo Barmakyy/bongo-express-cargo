@@ -22,7 +22,12 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? process.env.FRONTEND_URL || 'https://your-project-name.vercel.app'
+    : 'http://localhost:5173',
+  credentials: true
+}));
 app.use(express.json());
 
 // Serve static files from the 'uploads' directory
