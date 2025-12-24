@@ -66,5 +66,9 @@ userSchema.methods.correctPassword = async function (candidatePassword, userPass
   return await bcrypt.compare(candidatePassword, userPassword);
 };
 
+// Add indexes for faster queries
+userSchema.index({ role: 1, createdAt: -1 });
+userSchema.index({ phone: 1, role: 1 });
+
 const User = mongoose.model('User', userSchema);
 export default User;

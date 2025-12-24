@@ -13,6 +13,9 @@ const StaffCreateShipment = () => {
     destination: '',
     weight: '',
     packageDetails: '',
+    cost: '',
+    paymentMethod: 'Cash',
+    paymentStatus: 'Pending',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showNotification } = useNotification();
@@ -24,6 +27,13 @@ const StaffCreateShipment = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate cost
+    if (!formData.cost || parseFloat(formData.cost) <= 0) {
+      showNotification('Please enter a valid cost amount', 'error');
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
       const res = await api.post('/staff-dashboard/shipments', formData);
@@ -77,10 +87,69 @@ const StaffCreateShipment = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Weight (kg)</label>
-                  <input type="number" name="weight" placeholder="e.g., 5" value={formData.weight} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" required />
+                  <input type="number" name="weight" placeholder="e.g., 5" value={formData.weight} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" />
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Payment Section */}
+          <div className="mt-8 pt-6 border-t">
+            <h3 className="text-lg font-semibold text-gray-700 mb-4">Payment Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Shipment Cost (KSh) *</label>
+                <input 
+                  type="number" 
+                  name="cost" 
+                  min="1" 
+                  step="0.01"
+                  placeholder="Enter amount" 
+                  value={formData.cost} 
+                  onChange={handleChange} 
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" 
+                  required 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Payment Method *</label>
+                <select 
+                  name="paymentMethod" 
+                  value={formData.paymentMethod} 
+                  onChange={handleChange} 
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+                  required
+                >
+                  <option value="Cash">Cash</option>
+                  <option value="M-Pesa">M-Pesa</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Card">Card</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Payment Status *</label>
+                <select 
+                  name="paymentStatus" 
+                  value={formData.paymentStatus} 
+                  onChange={handleChange} 
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+                  required
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Completed">Completed</option>
+                </select>
+              </div>
+            </div>
+            {formData.cost && (
+              <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-700 font-medium">Total Amount:</span>
+                  <span className="text-2xl font-bold text-blue-600">
+                    KSh {parseFloat(formData.cost).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="mt-8 pt-6 border-t flex justify-end">

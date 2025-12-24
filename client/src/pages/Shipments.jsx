@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaPlus, FaSearch, FaTruck, FaCheckCircle, FaExclamationTriangle, FaTimesCircle, FaBoxOpen } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaTruck, FaCheckCircle, FaExclamationTriangle, FaTimesCircle, FaBoxOpen, FaSpinner } from 'react-icons/fa';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { format } from 'date-fns';
 import api from '../api/axios';
@@ -153,6 +153,12 @@ const Shipments = () => {
     setSelectedShipment(null);
   };
 
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingShipment(null);
+    setCurrentShipment(initialFormState);
+  };
+
   const handleDelete = async (shipmentId) => {
     if (window.confirm('Are you sure you want to delete this shipment?')) {
       try {
@@ -230,37 +236,41 @@ const Shipments = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full">
             <thead>
-              <tr className="border-b bg-gray-50">
-                <th className="p-3 text-sm font-semibold text-gray-600">Shipment ID</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Customer</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Origin</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Destination</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Branch</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Staff</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Status</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Date</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Actions</th>
+              <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Shipment ID</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Customer</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Origin</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Destination</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Branch</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Staff</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Date</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody>
-              {loading && <tr><td colSpan="9" className="text-center p-4">Loading...</td></tr>}
+            <tbody className="divide-y divide-gray-200">
+              {loading && <tr><td colSpan="9" className="text-center py-12 text-gray-500"><FaSpinner className="animate-spin inline-block mr-2" />Loading...</td></tr>}
               {!loading && shipments.map((shipment) => (
-                <tr key={shipment._id} className="border-b hover:bg-gray-50">
-                  <td className="p-3 text-sm font-medium text-primary">{shipment.shipmentId}</td>
-                  <td className="p-3 text-sm text-gray-700">{shipment.customer?.name || shipment.guestDetails?.name || 'N/A'}</td>
-                  <td className="p-3 text-sm text-gray-700">{shipment.origin}</td>
-                  <td className="p-3 text-sm text-gray-700">{shipment.destination}</td>
-                  <td className="p-3 text-sm text-gray-700">{shipment.branch}</td>
-                  <td className="p-3 text-sm text-gray-500">{shipment.createdBy?.name || 'N/A'}</td>
-                  <td className="p-3 text-sm"><StatusBadge status={shipment.status} /></td>
-                  <td className="p-3 text-sm text-gray-500">{format(new Date(shipment.dispatchDate), 'MMM dd, yyyy')}</td>
-                  <td className="p-3 text-sm">
-                    <div className="flex space-x-2">
-                      <button onClick={() => openViewModal(shipment)} className="text-blue-500 hover:text-blue-700">View</button>
-                      <button onClick={() => openEditModal(shipment)} className="text-green-500 hover:text-green-700">Edit</button>
-                      <button onClick={() => handleDelete(shipment._id)} className="text-red-500 hover:text-red-700">Delete</button>
+                <tr key={shipment._id} className="hover:bg-blue-50 transition-colors duration-150">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600">{shipment.shipmentId}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{shipment.customer?.name || shipment.guestDetails?.name || 'Guest'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{shipment.origin}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{shipment.destination}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      {shipment.branch}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{shipment.createdBy?.name || 'N/A'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap"><StatusBadge status={shipment.status} /></td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{format(new Date(shipment.dispatchDate), 'MMM dd, yyyy')}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => openViewModal(shipment)} className="text-blue-600 hover:text-blue-800 font-medium transition-colors">View</button>
+                      <button onClick={() => openEditModal(shipment)} className="text-green-600 hover:text-green-800 font-medium transition-colors">Edit</button>
+                      <button onClick={() => handleDelete(shipment._id)} className="text-red-600 hover:text-red-800 font-medium transition-colors">Delete</button>
                     </div>
                   </td>
                 </tr>
@@ -297,8 +307,8 @@ const Shipments = () => {
       {/* 5. Add/Edit Shipment Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <motion.div className="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col" variants={modalVariants} initial="hidden" animate="visible" exit="hidden">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={closeModal}>
+            <motion.div className="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col" variants={modalVariants} initial="hidden" animate="visible" exit="hidden" onClick={(e) => e.stopPropagation()}>
               <div className="p-6 border-b shrink-0">
                 <h2 className="text-xl font-bold text-primary">
                   {editingShipment ? 'Edit' : 'Create New'} Shipment
@@ -384,13 +394,14 @@ const Shipments = () => {
       {/* View Details Modal */}
       <AnimatePresence>
         {isViewModalOpen && selectedShipment && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setIsViewModalOpen(false)}>
             <motion.div
               className="bg-white rounded-lg shadow-2xl w-full max-w-xl"
               variants={modalVariants}
               initial="hidden"
               animate="visible"
               exit="hidden"
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6 border-b flex justify-between items-center">
                 <h2 className="text-xl font-bold text-primary">Shipment Details: {selectedShipment.shipmentId}</h2>

@@ -145,6 +145,23 @@ const Payments = () => {
     }
   };
 
+  const handleDeletePayment = async (paymentId) => {
+    if (!window.confirm('Are you sure you want to delete this payment? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      await api.delete(`/payments/${paymentId}`);
+      showNotification('Payment deleted successfully!', 'success');
+      // Refetch data to update the UI
+      fetchData();
+    } catch (err) {
+      const message = err.response?.data?.message || 'Failed to delete payment.';
+      showNotification(message, 'error');
+      console.error(err);
+    }
+  };
+
   const handleDownloadInvoice = (paymentId) => {
     api.get(`/payments/${paymentId}/invoice`, { responseType: 'blob' })
       .then(response => {
@@ -257,41 +274,48 @@ const Payments = () => {
       </div>
 
       {/* 4. Payments Table */}
-      <div className="bg-white p-6 rounded-2xl shadow-md">
-        <h3 className="text-lg font-semibold text-primary mb-4">Recent Payments</h3>
+      <div className="bg-white rounded-2xl shadow-md overflow-hidden">
+        <div className="p-6 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-primary">Recent Payments</h3>
+        </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full">
             <thead>
-              <tr className="border-b bg-gray-50">
-                <th className="p-3 text-sm font-semibold text-gray-600">Payment ID</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Customer</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Amount</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Method</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Date</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Status</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Actions</th>
+              <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Payment ID</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Customer</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Amount</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Method</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Date</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody>
-              {loading && <tr><td colSpan="7" className="text-center p-4">Loading...</td></tr>}
+            <tbody className="divide-y divide-gray-200">
+              {loading && <tr><td colSpan="7" className="text-center py-12 text-gray-500"><FaSpinner className="animate-spin inline-block mr-2" />Loading...</td></tr>}
               {!loading && payments.map((payment) => (
-                <tr key={payment._id} className="border-b hover:bg-gray-50">
-                  <td className="p-3 text-sm font-medium text-primary">{payment.paymentId}</td>
-                  <td className="p-3 text-sm text-gray-700">{payment.customer?.name || 'N/A'}</td>
-                  <td className="p-3 text-sm text-gray-700">KSh {payment.amount.toLocaleString()}</td>
-                  <td className="p-3 text-sm text-gray-500">{payment.method}</td>
-                  <td className="p-3 text-sm text-gray-500">{format(new Date(payment.transactionDate), 'MMM dd, yyyy')}</td>
-                  <td className="p-3 text-sm"><StatusBadge status={payment.status} /></td>
-                  <td className="p-3 text-sm">
-                    <div className="flex space-x-3">
-                      <button onClick={() => openModal(payment)} className="text-blue-500 hover:text-blue-700 font-semibold">View</button>
-                      {payment.status === 'Pending' && <button onClick={() => handleApprovePayment(payment._id)} className="text-green-500 hover:text-green-700 font-semibold">Approve</button>}
-                      {payment.status === 'Failed' && <button onClick={() => handleRetryPayment(payment._id)} className="text-yellow-500 hover:text-yellow-700 font-semibold">Retry</button>}
+                <tr key={payment._id} className="hover:bg-blue-50 transition-colors duration-150">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600">{payment.paymentId}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{payment.customer?.name || 'Guest'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">KSh {payment.amount.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100">
+                      {payment.method}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{format(new Date(payment.transactionDate), 'MMM dd, yyyy')}</td>
+                  <td className="px-6 py-4 whitespace-nowrap"><StatusBadge status={payment.status} /></td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => openModal(payment)} className="text-blue-600 hover:text-blue-800 font-medium transition-colors">View</button>
+                      {payment.status === 'Pending' && <button onClick={() => handleApprovePayment(payment._id)} className="text-green-600 hover:text-green-800 font-medium transition-colors">Approve</button>}
+                      {payment.status === 'Failed' && <button onClick={() => handleRetryPayment(payment._id)} className="text-yellow-600 hover:text-yellow-800 font-medium transition-colors">Retry</button>}
+                      <button onClick={() => handleDeletePayment(payment._id)} className="text-red-600 hover:text-red-800 font-medium transition-colors">Delete</button>
                     </div>
                   </td>
                 </tr>
               ))}
-              {!loading && payments.length === 0 && <tr><td colSpan="7" className="text-center p-4">No payments found.</td></tr>}
+              {!loading && payments.length === 0 && <tr><td colSpan="7" className="text-center py-12 text-gray-500">No payments found</td></tr>}
             </tbody>
           </table>
         </div>
@@ -300,13 +324,14 @@ const Payments = () => {
       {/* 6. Payment Details Modal */}
       <AnimatePresence>
         {isModalOpen && selectedPayment && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={closeModal}>
             <motion.div
               className="bg-white rounded-2xl shadow-2xl w-full max-w-lg"
               variants={modalVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6 border-b flex justify-between items-center">
                 <h2 className="text-xl font-bold text-primary">Payment Details</h2>

@@ -48,5 +48,10 @@ paymentSchema.pre('save', async function (next) {
   next();
 });
 
+// Add indexes for faster queries
+paymentSchema.index({ status: 1, createdAt: -1 });
+paymentSchema.index({ customer: 1, createdAt: -1 });
+paymentSchema.index({ shipment: 1 });
+
 const Payment = mongoose.model('Payment', paymentSchema);
 export default Payment;

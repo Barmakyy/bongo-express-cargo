@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaSearch, FaUsers, FaUserCheck, FaUserSlash, FaUserTie, FaStar, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaUsers, FaUserCheck, FaUserSlash, FaUserTie, FaStar, FaSort, FaSortUp, FaSortDown, FaSpinner } from 'react-icons/fa';
 import { FiChevronLeft, FiChevronRight, FiDownload } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios';
@@ -272,35 +272,48 @@ const Staff = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full">
             <thead>
-              <tr className="border-b bg-gray-50 text-sm text-gray-600">
-                <th className="p-3 font-semibold">Photo</th>
-                <th className="p-3 font-semibold cursor-pointer" onClick={() => requestSort('name')}>Name</th>
-                <th className="p-3 font-semibold">Email & Phone</th>
-                <th className="p-3 font-semibold">Role</th>
-                <th className="p-3 font-semibold">Status</th>
-                <th className="p-3 font-semibold text-center">Assigned Shipments</th>
-                <th className="p-3 font-semibold">Last Login</th>
-                <th className="p-3 font-semibold">Actions</th>
+              <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Photo</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer" onClick={() => requestSort('name')}>Name</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Email & Phone</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Role</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Assigned Shipments</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Last Login</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody>
-              {loading && <tr><td colSpan="7" className="text-center p-4">Loading...</td></tr>}
+            <tbody className="divide-y divide-gray-200">
+              {loading && <tr><td colSpan="8" className="text-center py-12 text-gray-500"><FaSpinner className="animate-spin inline-block mr-2" />Loading...</td></tr>}
               {!loading && sortedStaff.map((staffMember) => (
-                <tr key={staffMember._id} className="border-b hover:bg-gray-50">
-                  <td className="p-3"><img src={staffMember.profilePicture ? `http://localhost:5000${staffMember.profilePicture}` : `https://ui-avatars.com/api/?name=${staffMember.name}&background=random`} alt={staffMember.name} className="w-10 h-10 rounded-full object-cover" /></td>
-                  <td className="p-3 text-sm font-medium text-primary">{staffMember.name}</td>
-                  <td className="p-3 text-sm text-gray-500"><div>{staffMember.email}</div><div>{staffMember.phone || 'N/A'}</div></td>
-                  <td className="p-3 text-sm text-gray-700 capitalize">{staffMember.role}</td>
-                  <td className="p-3 text-sm"><StatusBadge status={staffMember.status} /></td>
-                  <td className="p-3 text-sm text-gray-700 text-center">{staffMember.assignedShipments}</td>
-                  <td className="p-3 text-sm text-gray-500">{staffMember.lastLogin ? format(new Date(staffMember.lastLogin), 'MMM dd, yyyy') : 'Never'}</td>
-                  <td className="p-3 text-sm">
-                    <div className="flex space-x-3">
-                      <button onClick={() => openViewModal(staffMember)} className="text-blue-500 hover:text-blue-700" title="View Details">View</button>
-                      <button onClick={() => openEditModal(staffMember)} className="text-green-500 hover:text-green-700" title="Edit Staff">Edit</button>
-                      <button onClick={() => handleDelete(staffMember._id)} className="text-red-500 hover:text-red-700" title="Delete Staff">Delete</button>
+                <tr key={staffMember._id} className="hover:bg-blue-50 transition-colors duration-150">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <img src={staffMember.profilePicture ? `http://localhost:5000${staffMember.profilePicture}` : `https://ui-avatars.com/api/?name=${staffMember.name}&background=random`} alt={staffMember.name} className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 shadow-sm" />
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600">{staffMember.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <div className="font-medium">{staffMember.email}</div>
+                    <div className="text-gray-500">{staffMember.phone || 'N/A'}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 capitalize">
+                      {staffMember.role}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap"><StatusBadge status={staffMember.status} /></td>
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 text-white text-sm font-bold shadow-md">
+                      {staffMember.assignedShipments}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{staffMember.lastLogin ? format(new Date(staffMember.lastLogin), 'MMM dd, yyyy') : 'Never'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => openViewModal(staffMember)} className="text-blue-600 hover:text-blue-800 font-medium transition-colors" title="View Details">View</button>
+                      <button onClick={() => openEditModal(staffMember)} className="text-green-600 hover:text-green-800 font-medium transition-colors" title="Edit Staff">Edit</button>
+                      <button onClick={() => handleDelete(staffMember._id)} className="text-red-600 hover:text-red-800 font-medium transition-colors" title="Delete Staff">Delete</button>
                     </div>
                   </td>
                 </tr>
@@ -337,13 +350,14 @@ const Staff = () => {
       {/* Add/Edit Modals etc. */}
       <AnimatePresence>
         {isAddModalOpen && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setIsAddModalOpen(false)}>
             <motion.div
               className="bg-white rounded-lg shadow-2xl w-full max-w-lg"
               variants={modalVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6 border-b">
                 <h2 className="text-xl font-bold text-primary">Add New Staff Member</h2>
@@ -399,13 +413,14 @@ const Staff = () => {
       {/* Edit Modal */}
       <AnimatePresence>
         {isEditModalOpen && selectedStaffMember && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setIsEditModalOpen(false)}>
             <motion.div
               className="bg-white rounded-lg shadow-2xl w-full max-w-lg"
               variants={modalVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6 border-b">
                 <h2 className="text-xl font-bold text-primary">Edit Staff Member</h2>
@@ -459,13 +474,14 @@ const Staff = () => {
       {/* View Modal */}
       <AnimatePresence>
         {isViewModalOpen && selectedStaffMember && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setIsViewModalOpen(false)}>
             <motion.div
               className="bg-white rounded-lg shadow-2xl w-full max-w-lg"
               variants={modalVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6 border-b flex justify-between items-center">
                 <h2 className="text-xl font-bold text-primary">Staff Details</h2>

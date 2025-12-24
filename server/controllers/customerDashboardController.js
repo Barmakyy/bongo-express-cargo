@@ -14,14 +14,37 @@ export const getCustomerStats = async (req, res) => {
   try {
     const customerId = req.user.id;
 
-    const totalShipments = await Shipment.countDocuments({ customer: customerId });
-    const deliveredShipments = await Shipment.countDocuments({ customer: customerId, status: 'Delivered' });
-    const pendingShipments = await Shipment.countDocuments({ customer: customerId, status: { $in: ['Pending', 'In Transit', 'Delayed'] } });
+    // Run queries in parallel for better performance
+    const [metricsResult, recentShipments] = await Promise.all([
+      // Combined metrics query
+      Shipment.aggregate([
+        { $match: { customer: new mongoose.Types.ObjectId(customerId) } },
+        {
+          $facet: {
+            total: [{ $count: 'count' }],
+            delivered: [
+              { $match: { status: 'Delivered' } },
+              { $count: 'count' }
+            ],
+            pending: [
+              { $match: { status: { $in: ['Pending', 'In Transit', 'Delayed'] } } },
+              { $count: 'count' }
+            ]
+          }
+        }
+      ]),
+      
+      // Recent shipments
+      Shipment.find({ customer: customerId })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select('shipmentId destination status dispatchDate')
+        .lean()
+    ]);
 
-    const recentShipments = await Shipment.find({ customer: customerId })
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .select('shipmentId destination status dispatchDate');
+    const totalShipments = metricsResult[0]?.total[0]?.count || 0;
+    const deliveredShipments = metricsResult[0]?.delivered[0]?.count || 0;
+    const pendingShipments = metricsResult[0]?.pending[0]?.count || 0;
 
     res.status(200).json({
       status: 'success',
@@ -254,7 +277,7 @@ export const generateCustomerInvoice = async (req, res) => {
 
     // --- Header ---
     doc.font('Helvetica-Bold').fontSize(18).fillColor(primaryColor).text('BongoExpress', { align: 'center' });
-    doc.font('Helvetica').fontSize(8).fillColor(darkGray).text('123 Logistics Lane, Mombasa, Kenya', { align: 'center' });
+    doc.font('Helvetica').fontSize(8).fillColor(darkGray).text('Minhaj Tower, Carlifonia Kamkunji, Nairobi', { align: 'center' });
     doc.moveDown(2);
 
     // --- Title & Details ---
@@ -288,10 +311,20 @@ export const generateCustomerInvoice = async (req, res) => {
     doc.font('Helvetica-Bold').fontSize(12).fillColor(primaryColor).text(`TOTAL: KSh ${payment.amount.toLocaleString()}`, { align: 'right' });
     doc.moveDown(2.5);
     if (payment.status === 'Completed') doc.fontSize(16).font('Helvetica-Bold').fillColor(secondaryColor).text('PAID', { align: 'center' });
+    
+    // --- Footer ---
+    doc.moveDown(2);
+    doc.font('Helvetica').fontSize(8).fillColor(darkGray).text('Thank you for choosing BongoExpress!', { align: 'center' });
+    doc.moveDown(0.5);
+    doc.fontSize(7).text('Contact us: +254712274897 | support@bongoexpress.com', { align: 'center' });
 
     doc.end();
   } catch (error) {
-    res.status(500).json({ status: 'error', message: 'Failed to generate invoice.', error: error.message });
+    console.error('Error generating invoice:', error);
+    // Only send JSON error if response hasn't been sent yet
+    if (!res.headersSent) {
+      res.status(500).json({ status: 'error', message: 'Failed to generate invoice.', error: error.message });
+    }
   }
 };
 

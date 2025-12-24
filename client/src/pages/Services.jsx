@@ -176,12 +176,14 @@ const Services = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            onClick={() => setSelectedService(null)}
           >
             <motion.div
               className="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden relative"
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.8 }}
+              onClick={(e) => e.stopPropagation()}
             >
               <img
                 src={selectedService.image}

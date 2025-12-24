@@ -81,5 +81,12 @@ shipmentSchema.pre('save', async function (next) {
   next();
 });
 
+// Add indexes for faster queries
+shipmentSchema.index({ status: 1 });
+shipmentSchema.index({ customer: 1, createdAt: -1 });
+shipmentSchema.index({ staff: 1, createdAt: -1 });
+shipmentSchema.index({ createdAt: -1 });
+shipmentSchema.index({ status: 1, staff: 1 });
+
 const Shipment = mongoose.model('Shipment', shipmentSchema);
 export default Shipment;

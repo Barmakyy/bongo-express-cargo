@@ -73,43 +73,45 @@ const StaffDashboardOverview = () => {
         <StatCard title="Pending Deliveries" value={stats?.metrics?.pendingDeliveries || 0} icon={<FaExclamationTriangle size={24} className="text-white" />} color="yellow" />
       </div>
 
-      <div className="bg-white p-6 rounded-xl shadow-soft-lg">
-        <h3 className="text-lg font-semibold text-primary mb-4">Your Priority Shipments</h3>
+      <div className="bg-white rounded-xl shadow-soft-lg overflow-hidden">
+        <div className="p-6 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-primary">Your Priority Shipments</h3>
+        </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full">
             <thead>
-              <tr className="border-b bg-gray-50">
-                <th className="p-3 text-sm font-semibold text-gray-600">Tracking #</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Customer</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Phone</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Origin</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Destination</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Status</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Created</th>
+              <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Tracking #</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Customer</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Phone</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Origin</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Destination</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Created</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-200">
               {stats?.priorityShipments?.length > 0 ? (
                 stats.priorityShipments.map((shipment) => (
-                  <tr key={shipment._id} className="border-b hover:bg-gray-50">
-                    <td className="p-3 text-sm font-medium text-primary">{shipment.shipmentId}</td>
-                    <td className="p-3 text-sm text-gray-700">
-                      {shipment.customer?.name || shipment.guestDetails?.name || 'N/A'}
+                  <tr key={shipment._id} className="hover:bg-blue-50 transition-colors duration-150">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600">{shipment.shipmentId}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {shipment.customer?.name || shipment.guestDetails?.name || 'Guest'}
                     </td>
-                    <td className="p-3 text-sm text-gray-700">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {shipment.customer?.phone || shipment.guestDetails?.phone || 'N/A'}
                     </td>
-                    <td className="p-3 text-sm text-gray-700">{shipment.origin}</td>
-                    <td className="p-3 text-sm text-gray-700">{shipment.destination}</td>
-                    <td className="p-3 text-sm"><StatusBadge status={shipment.status} /></td>
-                    <td className="p-3 text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{shipment.origin}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{shipment.destination}</td>
+                    <td className="px-6 py-4 whitespace-nowrap"><StatusBadge status={shipment.status} /></td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {shipment.createdAt ? format(new Date(shipment.createdAt), 'MMM dd, yyyy') : 'N/A'}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" className="text-center p-6 text-gray-500">No priority shipments at the moment.</td>
+                  <td colSpan="7" className="text-center py-12 text-gray-500">No priority shipments at the moment</td>
                 </tr>
               )}
             </tbody>

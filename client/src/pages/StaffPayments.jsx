@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaMoneyBillWave, FaSpinner, FaSearch, FaPhone } from 'react-icons/fa';
+import { FaMoneyBillWave, FaSpinner, FaSearch, FaPhone, FaDownload } from 'react-icons/fa';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import api from '../api/axios';
 import { useNotification } from '../context/NotificationContext';
@@ -38,6 +38,21 @@ const StaffPayments = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDownloadInvoice = (paymentId, paymentIdDisplay) => {
+    api.get(`/staff-dashboard/payments/${paymentId}/invoice`, { responseType: 'blob' })
+      .then(response => {
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `receipt-${paymentIdDisplay}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        showNotification('Receipt download started.', 'success');
+      })
+      .catch(() => showNotification('Failed to download receipt.', 'error'));
   };
 
   useEffect(() => {
@@ -89,11 +104,12 @@ const StaffPayments = () => {
               <th className="p-3 text-sm font-semibold text-gray-600">Amount</th>
               <th className="p-3 text-sm font-semibold text-gray-600">Status</th>
               <th className="p-3 text-sm font-semibold text-gray-600">Date</th>
+              <th className="p-3 text-sm font-semibold text-gray-600">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="7" className="text-center p-10"><FaSpinner className="animate-spin text-primary text-3xl mx-auto" /></td></tr>
+              <tr><td colSpan="8" className="text-center p-10"><FaSpinner className="animate-spin text-primary text-3xl mx-auto" /></td></tr>
             ) : payments.length > 0 ? (
               payments.map((payment) => (
                 <tr key={payment._id} className="border-b hover:bg-gray-50">
@@ -111,10 +127,19 @@ const StaffPayments = () => {
                   <td className="p-3 text-sm text-gray-500">
                     {payment.transactionDate ? format(new Date(payment.transactionDate), 'MMM dd, yyyy') : 'N/A'}
                   </td>
+                  <td className="p-3 text-sm">
+                    <button
+                      onClick={() => handleDownloadInvoice(payment._id, payment.paymentId)}
+                      className="text-blue-600 hover:text-blue-800 transition-colors"
+                      title="Download Receipt"
+                    >
+                      <FaDownload size={16} />
+                    </button>
+                  </td>
                 </tr>
               ))
             ) : (
-              <tr><td colSpan="7" className="text-center p-10 text-gray-500">No payment records found for your shipments.</td></tr>
+              <tr><td colSpan="8" className="text-center p-10 text-gray-500">No payment records found for your shipments.</td></tr>
             )}
           </tbody>
         </table>

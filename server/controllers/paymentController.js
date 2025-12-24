@@ -65,11 +65,22 @@ export const generateInvoice = async (req, res) => {
   try {
     const payment = await Payment.findById(req.params.id)
       .populate('customer', 'name email address phone')
-      .populate('shipment', 'shipmentId origin destination packageDetails');
+      .populate({
+        path: 'shipment',
+        select: 'shipmentId origin destination packageDetails customer guestDetails',
+        populate: {
+          path: 'customer',
+          select: 'name email phone'
+        }
+      });
 
     if (!payment) {
       return res.status(404).json({ status: 'fail', message: 'Payment not found' });
     }
+
+    // Get customer info from payment or shipment
+    const customerInfo = payment.customer || payment.shipment?.customer || null;
+    const guestInfo = payment.shipment?.guestDetails || null;
 
     const doc = new PDFDocument({ size: [240, 500], margin: 20 });
 
@@ -95,7 +106,7 @@ export const generateInvoice = async (req, res) => {
 
     // --- Header ---
     doc.font('Helvetica-Bold').fontSize(18).fillColor(primaryColor).text('BongoExpress', { align: 'center' });
-    doc.font('Helvetica').fontSize(8).fillColor(darkGray).text('123 Logistics Lane, Mombasa, Kenya', { align: 'center' });
+    doc.font('Helvetica').fontSize(8).fillColor(darkGray).text('Minhaj Tower, Carlifonia Kamkunji, Nairobi', { align: 'center' });
     doc.moveDown(2);
 
     // --- Title ---
@@ -112,9 +123,19 @@ export const generateInvoice = async (req, res) => {
 
     // --- Billed To ---
     drawSection('Billed To', () => {
-      doc.font('Helvetica-Bold').fontSize(9).fillColor(darkGray).text(payment.customer.name);
-      doc.font('Helvetica').text(payment.customer.email || 'N/A');
-      doc.text(payment.customer.phone || 'N/A');
+      doc.font('Helvetica-Bold').fontSize(9).fillColor(darkGray);
+      if (customerInfo) {
+        doc.text(customerInfo.name);
+        doc.font('Helvetica').text(customerInfo.email || 'N/A');
+        doc.text(customerInfo.phone || 'N/A');
+      } else if (guestInfo) {
+        doc.text(guestInfo.name || 'Guest Customer');
+        doc.font('Helvetica').text('N/A');
+        doc.text(guestInfo.phone || 'N/A');
+      } else {
+        doc.text('Guest Customer');
+        doc.font('Helvetica').text('N/A');
+      }
     });
 
     // --- Items Table ---
@@ -143,11 +164,17 @@ export const generateInvoice = async (req, res) => {
     }
 
     // --- Footer ---
-    doc.fontSize(8).fillColor(darkGray).text('Thank you for your business!', 20, doc.page.height - 30, { align: 'center', width: doc.page.width - 40 });
+    doc.fontSize(8).fillColor(darkGray).text('Thank you for your business!', 20, doc.page.height - 50, { align: 'center', width: doc.page.width - 40 });
+    doc.moveDown(0.5);
+    doc.fontSize(7).text('Contact us: +254712274897 | support@bongoexpress.com', { align: 'center' });
 
     doc.end();
   } catch (error) {
-    res.status(500).json({ status: 'error', message: 'Failed to generate invoice.', error: error.message });
+    console.error('Error generating invoice:', error);
+    // Only send JSON error if response hasn't been sent yet
+    if (!res.headersSent) {
+      res.status(500).json({ status: 'error', message: 'Failed to generate invoice.', error: error.message });
+    }
   }
 };
 
@@ -275,6 +302,28 @@ export const getPaymentChartData = async (req, res) => {
     }));
 
     res.status(200).json({ status: 'success', data: { chartData } });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+// @desc    Delete a payment
+// @route   DELETE /api/payments/:id
+// @access  Private/Admin
+export const deletePayment = async (req, res) => {
+  try {
+    const payment = await Payment.findById(req.params.id);
+
+    if (!payment) {
+      return res.status(404).json({ status: 'fail', message: 'Payment not found' });
+    }
+
+    await Payment.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Payment deleted successfully',
+    });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }

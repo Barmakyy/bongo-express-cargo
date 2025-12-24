@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaSearch, FaUsers, FaUserCheck, FaUserSlash, FaTruck } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaUsers, FaUserCheck, FaUserSlash, FaTruck, FaSpinner } from 'react-icons/fa';
 import { FiChevronLeft, FiChevronRight, FiDownload } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion'; 
 import { useNotification } from '../context/NotificationContext';
@@ -226,37 +226,41 @@ const Customers = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full">
             <thead>
-              <tr className="border-b bg-gray-50">
-                <th className="p-3 text-sm font-semibold text-gray-600">Name</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Email</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Phone</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Location</th>
-                <th className="p-3 text-sm font-semibold text-gray-600 text-center">Total Shipments</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Status</th>
-                <th className="p-3 text-sm font-semibold text-gray-600">Actions</th>
+              <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Name</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Email</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Phone</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Location</th>
+                <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Total Shipments</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody>
-              {loading && <tr><td colSpan="7" className="text-center p-4">Loading...</td></tr>}
+            <tbody className="divide-y divide-gray-200">
+              {loading && <tr><td colSpan="7" className="text-center py-12 text-gray-500"><FaSpinner className="animate-spin inline-block mr-2" />Loading...</td></tr>}
               {!loading && customers.map((customer) => (
-                <tr key={customer._id} className="border-b hover:bg-gray-50">
-                  <td className="p-3 text-sm font-medium text-primary">{customer.name}</td>
-                  <td className="p-3 text-sm text-gray-500">{customer.email}</td>
-                  <td className="p-3 text-sm text-gray-500">{customer.phone || 'N/A'}</td>
-                  <td className="p-3 text-sm text-gray-500">{customer.location || 'N/A'}</td>
-                  <td className="p-3 text-sm text-gray-700 text-center">{customer.totalShipments}</td>
-                  <td className="p-3 text-sm"><StatusBadge status={customer.status} /></td>
-                  <td className="p-3 text-sm">
-                    <div className="flex space-x-3">
-                      <button onClick={() => openEditModal(customer)} className="text-blue-500 hover:text-blue-700" title="View/Edit Profile">Edit</button>
-                      <button onClick={() => handleDelete(customer._id)} className="text-red-500 hover:text-red-700" title="Delete Customer">Delete</button>
+                <tr key={customer._id} className="hover:bg-blue-50 transition-colors duration-150">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600">{customer.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{customer.email}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{customer.phone || 'N/A'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{customer.location || 'N/A'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-white text-sm font-bold shadow-md">
+                      {customer.totalShipments}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap"><StatusBadge status={customer.status} /></td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => openEditModal(customer)} className="text-blue-600 hover:text-blue-800 font-medium transition-colors" title="View/Edit Profile">Edit</button>
+                      <button onClick={() => handleDelete(customer._id)} className="text-red-600 hover:text-red-800 font-medium transition-colors" title="Delete Customer">Delete</button>
                     </div>
                   </td>
                 </tr>
               ))}
-              {!loading && customers.length === 0 && <tr><td colSpan="7" className="text-center p-4">No customers found.</td></tr>}
+              {!loading && customers.length === 0 && <tr><td colSpan="7" className="text-center py-12 text-gray-500">No customers found</td></tr>}
             </tbody>
           </table>
         </div>
@@ -289,14 +293,14 @@ const Customers = () => {
       {/* 4. Edit Customer Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={closeAndResetModal}>
             <motion.div
               className="bg-white rounded-lg shadow-2xl w-full max-w-lg"
               variants={modalVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
-            >
+              onClick={(e) => e.stopPropagation()}              onClick={(e) => e.stopPropagation()}            >
               <div className="p-6 border-b">
                 <h2 className="text-xl font-bold text-primary">Edit Customer</h2>
               </div>
@@ -345,13 +349,14 @@ const Customers = () => {
       {/* 5. Add Customer Modal */}
       <AnimatePresence>
         {isAddModalOpen && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={closeAddModal}>
             <motion.div
               className="bg-white rounded-lg shadow-2xl w-full max-w-lg"
               variants={modalVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6 border-b">
                 <h2 className="text-xl font-bold text-primary">Add New Customer</h2>

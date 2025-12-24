@@ -5,136 +5,216 @@ import { startOfMonth, endOfMonth, subMonths } from 'date-fns';
 
 export const getDashboardStats = async (req, res) => {
   try {
-    // 1. Metric Cards Data
-    const totalShipments = await Shipment.countDocuments();
-    const totalCustomers = await User.countDocuments({ role: 'customer' });
+    const sixMonthsAgo = startOfMonth(subMonths(new Date(), 5));
 
-    const totalRevenueResult = await Payment.aggregate([
-      { $match: { status: 'Completed' } },
-      { $group: { _id: null, totalRevenue: { $sum: '$amount' } } },
+    // Run all aggregations in parallel for better performance
+    const [
+      metricsResult,
+      statusDistribution,
+      shipmentGrowthResult,
+      revenueResult,
+      customerGrowthResult,
+      recentShipments,
+      recentCustomers
+    ] = await Promise.all([
+      // 1. All metrics in one aggregation
+      Shipment.aggregate([
+        {
+          $facet: {
+            total: [{ $count: 'count' }],
+            delivered: [
+              { $match: { status: 'Delivered' } },
+              { $count: 'count' }
+            ]
+          }
+        }
+      ]),
+      
+      // 2. Status Distribution
+      Shipment.aggregate([
+        { $group: { _id: '$status', count: { $sum: 1 } } }
+      ]),
+      
+      // 3. Shipment Growth (Last 6 months) - Single aggregation
+      Shipment.aggregate([
+        {
+          $match: { createdAt: { $gte: sixMonthsAgo } }
+        },
+        {
+          $group: {
+            _id: {
+              year: { $year: '$createdAt' },
+              month: { $month: '$createdAt' },
+              status: '$status'
+            },
+            count: { $sum: 1 }
+          }
+        }
+      ]),
+      
+      // 4. Revenue Data (Last 6 months) - Single aggregation
+      Payment.aggregate([
+        {
+          $match: {
+            status: 'Completed',
+            createdAt: { $gte: sixMonthsAgo }
+          }
+        },
+        {
+          $group: {
+            _id: {
+              year: { $year: '$createdAt' },
+              month: { $month: '$createdAt' }
+            },
+            revenue: { $sum: '$amount' }
+          }
+        }
+      ]),
+      
+      // 5. Customer Growth (Last 6 months) - Single aggregation
+      User.aggregate([
+        {
+          $match: { role: 'customer' }
+        },
+        {
+          $facet: {
+            total: [{ $count: 'count' }],
+            monthly: [
+              { $match: { createdAt: { $gte: sixMonthsAgo } } },
+              {
+                $group: {
+                  _id: {
+                    year: { $year: '$createdAt' },
+                    month: { $month: '$createdAt' }
+                  },
+                  count: { $sum: 1 }
+                }
+              }
+            ]
+          }
+        }
+      ]),
+      
+      // 6. Recent Activities
+      Shipment.find()
+        .sort({ createdAt: -1 })
+        .limit(3)
+        .select('_id customer guestDetails createdAt')
+        .populate('customer', 'name')
+        .lean(),
+      
+      User.find({ role: 'customer' })
+        .sort({ createdAt: -1 })
+        .limit(2)
+        .select('_id name createdAt')
+        .lean()
+    ]);
+
+    // Process metrics
+    const totalShipments = metricsResult[0]?.total[0]?.count || 0;
+    const deliveredShipments = metricsResult[0]?.delivered[0]?.count || 0;
+    const deliverySuccessRate = totalShipments > 0 
+      ? (deliveredShipments / totalShipments) * 100 
+      : 0;
+
+    // Get total revenue and customers
+    const [totalRevenueResult, totalCustomers] = await Promise.all([
+      Payment.aggregate([
+        { $match: { status: 'Completed' } },
+        { $group: { _id: null, totalRevenue: { $sum: '$amount' } } }
+      ]),
+      User.countDocuments({ role: 'customer' })
     ]);
     const totalRevenue = totalRevenueResult[0]?.totalRevenue || 0;
 
-    const deliveredResult = await Shipment.aggregate([
-      {
-        $group: {
-          _id: null,
-          total: { $sum: 1 },
-          delivered: {
-            $sum: { $cond: [{ $eq: ['$status', 'Delivered'] }, 1, 0] },
-          },
-        },
-      },
-    ]);
-    const deliverySuccessRate =
-      deliveredResult[0]?.total > 0
-        ? (deliveredResult[0].delivered / deliveredResult[0].total) * 100
-        : 0;
-
-    // 2. Shipment Status Distribution
-    const statusDistribution = await Shipment.aggregate([
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 },
-        },
-      },
-    ]);
+    // Process status distribution
     const statusDistributionData = statusDistribution.map(item => ({
       name: item._id || 'Unknown',
       value: item.count,
     }));
 
-    // 3. Shipment Growth Over Time (Last 6 months)
+    // Process shipment growth data
     const shipmentGrowthData = [];
     for (let i = 5; i >= 0; i--) {
-      const monthStart = startOfMonth(subMonths(new Date(), i));
-      const monthEnd = endOfMonth(subMonths(new Date(), i));
-      
-      const monthShipments = await Shipment.aggregate([
-        {
-          $match: {
-            createdAt: { $gte: monthStart, $lte: monthEnd },
-          },
-        },
-        {
-          $group: {
-            _id: '$status',
-            count: { $sum: 1 },
-          },
-        },
-      ]);
-
+      const targetDate = subMonths(new Date(), i);
       const monthData = {
-        name: monthStart.toLocaleString('default', { month: 'short' }),
+        name: targetDate.toLocaleString('default', { month: 'short' }),
         Delivered: 0,
         Pending: 0,
         Cancelled: 0,
       };
-
-      monthShipments.forEach(item => {
-        if (item._id === 'Delivered') monthData.Delivered = item.count;
-        else if (item._id === 'Pending') monthData.Pending = item.count;
-        else if (item._id === 'Cancelled') monthData.Cancelled = item.count;
+      
+      const year = targetDate.getFullYear();
+      const month = targetDate.getMonth() + 1;
+      
+      shipmentGrowthResult.forEach(item => {
+        if (item._id.year === year && item._id.month === month) {
+          const status = item._id.status;
+          if (status === 'Delivered') monthData.Delivered = item.count;
+          else if (status === 'Pending') monthData.Pending = item.count;
+          else if (status === 'Cancelled') monthData.Cancelled = item.count;
+        }
       });
-
+      
       shipmentGrowthData.push(monthData);
     }
 
-    // 4. Revenue Data (Last 6 months)
+    // Process revenue data
     const revenueData = [];
     for (let i = 5; i >= 0; i--) {
-      const monthStart = startOfMonth(subMonths(new Date(), i));
-      const monthEnd = endOfMonth(subMonths(new Date(), i));
-
-      const monthRevenue = await Payment.aggregate([
-        {
-          $match: {
-            status: 'Completed',
-            createdAt: { $gte: monthStart, $lte: monthEnd },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            revenue: { $sum: '$amount' },
-          },
-        },
-      ]);
-
+      const targetDate = subMonths(new Date(), i);
+      const year = targetDate.getFullYear();
+      const month = targetDate.getMonth() + 1;
+      
+      const monthRevenue = revenueResult.find(
+        item => item._id.year === year && item._id.month === month
+      );
+      
       revenueData.push({
-        name: monthStart.toLocaleString('default', { month: 'short' }),
-        revenue: monthRevenue[0]?.revenue || 0,
+        name: targetDate.toLocaleString('default', { month: 'short' }),
+        revenue: monthRevenue?.revenue || 0,
       });
     }
 
-    // 5. Customer Growth Data (Last 6 months)
+    // Process customer growth data (cumulative)
     const customerGrowthData = [];
+    let cumulativeCustomers = totalCustomers;
+    const monthlyNewCustomers = customerGrowthResult[0]?.monthly || [];
+    
     for (let i = 5; i >= 0; i--) {
-      const monthStart = startOfMonth(subMonths(new Date(), i));
-      const monthEnd = endOfMonth(subMonths(new Date(), i));
-
-      const monthCustomers = await User.countDocuments({
-        role: 'customer',
-        createdAt: { $lte: monthEnd },
-      });
-
+      const targetDate = subMonths(new Date(), i);
+      const year = targetDate.getFullYear();
+      const month = targetDate.getMonth() + 1;
+      
+      const monthCustomers = monthlyNewCustomers.find(
+        item => item._id.year === year && item._id.month === month
+      );
+      
+      if (i === 0) {
+        // Current month - use total
+        cumulativeCustomers = totalCustomers;
+      } else {
+        // Subtract customers from more recent months
+        for (let j = 0; j < i; j++) {
+          const futureDate = subMonths(new Date(), j);
+          const futureYear = futureDate.getFullYear();
+          const futureMonth = futureDate.getMonth() + 1;
+          const futureCustomers = monthlyNewCustomers.find(
+            item => item._id.year === futureYear && item._id.month === futureMonth
+          );
+          if (futureCustomers) {
+            cumulativeCustomers -= futureCustomers.count;
+          }
+        }
+      }
+      
       customerGrowthData.push({
-        name: monthStart.toLocaleString('default', { month: 'short' }),
-        customers: monthCustomers,
+        name: targetDate.toLocaleString('default', { month: 'short' }),
+        customers: Math.max(0, cumulativeCustomers),
       });
     }
 
-    // 6. Recent Activities
-    const recentShipments = await Shipment.find()
-      .sort({ createdAt: -1 })
-      .limit(3)
-      .populate('customer', 'name');
-
-    const recentCustomers = await User.find({ role: 'customer' })
-      .sort({ createdAt: -1 })
-      .limit(2);
-
+    // Process activities
     const activities = [
       ...recentShipments.map(s => ({
         id: s._id,
@@ -156,7 +236,7 @@ export const getDashboardStats = async (req, res) => {
         metrics: {
           totalShipments,
           totalCustomers,
-          totalRevenue: totalRevenueResult.length > 0 ? totalRevenueResult[0].totalRevenue : 0,
+          totalRevenue,
           deliverySuccessRate,
         },
         charts: {

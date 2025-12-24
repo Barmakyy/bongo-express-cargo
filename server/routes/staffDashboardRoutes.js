@@ -9,6 +9,8 @@ import {
   replyToMessageByStaff,
   getStaffPayments,
   createShipmentByStaff,
+  updateShipmentCost,
+  generateStaffInvoice,
 } from '../controllers/staffDashboardController.js';
 
 const router = express.Router();
@@ -19,8 +21,10 @@ router.get('/stats', getStaffStats);
 router.route('/shipments').get(getStaffShipments).post(createShipmentByStaff);
 router.get('/shipments/:id', getStaffShipmentById);
 router.patch('/shipments/:id', updateShipmentByStaff);
+router.patch('/shipments/:id/cost', updateShipmentCost);
 router.get('/messages', getStaffMessages);
 router.post('/messages/:id/reply', replyToMessageByStaff);
 router.get('/payments', getStaffPayments);
+router.get('/payments/:id/invoice', generateStaffInvoice);
 
 export default router;

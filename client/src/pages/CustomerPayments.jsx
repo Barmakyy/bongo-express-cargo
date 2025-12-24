@@ -205,12 +205,13 @@ const CustomerPayments = () => {
       {/* Invoice Modal */}
       <AnimatePresence>
         {selectedPayment && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedPayment(null)}>
             <motion.div
               className="bg-white rounded-2xl shadow-2xl w-full max-w-md"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6 border-b flex justify-between items-center">
                 <h2 className="text-xl font-bold text-primary">Invoice Details</h2>
@@ -250,12 +251,13 @@ const CustomerPayments = () => {
       {/* Pay Now Modal */}
       <AnimatePresence>
         {isPayModalOpen && selectedPayment && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setIsPayModalOpen(false)}>
             <motion.div
               className="bg-white rounded-2xl shadow-2xl w-full max-w-sm text-center"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6 border-b">
                 <h2 className="text-xl font-bold text-primary">Confirm Payment</h2>
